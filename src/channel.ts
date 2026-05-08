@@ -73,7 +73,6 @@ export const onlyOneBotPlugin = createChatChannelPlugin<ResolvedAccount>({
         ] as Record<string, unknown> | undefined;
         const nextChannel: Record<string, unknown> = {
           ...(prevChannel ?? {}),
-          enabled: true,
         };
         if (setupInput.token) {
           nextChannel.token = setupInput.token;
