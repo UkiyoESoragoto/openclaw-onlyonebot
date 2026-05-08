@@ -1,0 +1,34 @@
+{
+  "name": "@openclaw/onlyonebot",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Minimal OneBot v11 channel plugin for OpenClaw",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.2",
+    "openclaw": "^0.0.1",
+    "typescript": "^5.9.3"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "setupEntry": "./setup-entry.ts",
+    "channel": {
+      "id": "onlyonebot",
+      "label": "Only OneBot",
+      "blurb": "Minimal OneBot v11 channel plugin for OpenClaw"
+    },
+    "compat": {
+      "pluginApi": ">=2026.3.24-beta.2",
+      "minGatewayVersion": "2026.3.24-beta.2"
+    },
+    "build": {
+      "openclawVersion": "2026.3.24-beta.2",
+      "pluginSdkVersion": "2026.3.24-beta.2"
+    }
+  }
+}

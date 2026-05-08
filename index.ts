@@ -1,0 +1,66 @@
+import { defineChannelPluginEntry } from "openclaw/plugin-sdk/channel-core";
+import { onlyOneBotPlugin } from "./src/channel.js";
+
+type OneBotWebhookEvent = Record<string, unknown>;
+
+function parseWebhookPayload(req: unknown): OneBotWebhookEvent {
+  if (req && typeof req === "object" && "body" in req) {
+    const body = (req as { body?: unknown }).body;
+    if (body && typeof body === "object") {
+      return body as OneBotWebhookEvent;
+    }
+  }
+  return {};
+}
+
+async function handleOnlyOneBotInbound(
+  _api: unknown,
+  _event: OneBotWebhookEvent,
+): Promise<void> {
+  // Placeholder for inbound dispatch wiring.
+}
+
+const entry: any = defineChannelPluginEntry({
+  id: "onlyonebot",
+  name: "Only OneBot",
+  description: "Only OneBot channel plugin",
+  plugin: onlyOneBotPlugin,
+  registerCliMetadata(api: any) {
+    api.registerCli(
+      ({ program }: any) => {
+        program
+          .command("onlyonebot")
+          .description("Only OneBot management");
+      },
+      {
+        descriptors: [
+          {
+            name: "onlyonebot",
+            description: "Only OneBot management",
+            hasSubcommands: false,
+          },
+        ],
+      },
+    );
+  },
+  registerFull(api: any) {
+    api.registerHttpRoute({
+      path: "/onlyonebot/webhook",
+      auth: "plugin", // plugin-managed auth (verify signatures yourself)
+      handler: async (req: any, res: any) => {
+        const event = parseWebhookPayload(req);
+  
+        // Your inbound handler dispatches the message to OpenClaw.
+        // The exact wiring depends on your platform SDK -
+        // see a real example in the bundled Microsoft Teams or Google Chat plugin package.
+        await handleOnlyOneBotInbound(api, event);
+  
+        res.statusCode = 200;
+        res.end("ok");
+        return true;
+      },
+    });
+  },
+});
+
+export default entry;

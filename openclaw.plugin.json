@@ -1,0 +1,35 @@
+{
+  "id": "onlyonebot",
+  "kind": "channel",
+  "channels": ["onlyonebot"],
+  "name": "OnlyOneBot",
+  "description": "Minimal OneBot v11 channel plugin",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false
+  },
+  "channelConfigs": {
+    "onlyonebot": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "token": { "type": "string" },
+          "allowFrom": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "uiHints": {
+        "token": {
+          "label": "Bot token",
+          "sensitive": true
+        }
+      }
+    }
+  },
+  "activation": {
+    "onStartup": true
+  }
+}
