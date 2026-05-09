@@ -1,6 +1,24 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { onlyOneBotPlugin } from "./src/channel.js";
 
 type OneBotWebhookEvent = Record<string, unknown>;
+
+/** 写入插件根目录 plugin-diag.log；不依赖 podman logs 是否收集 stdout */
+function appendPluginDiag(line: string): void {
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const pluginRoot = path.resolve(here, "..");
+    fs.appendFileSync(
+      path.join(pluginRoot, "plugin-diag.log"),
+      `[${new Date().toISOString()}] ${line}\n`,
+    );
+  } catch {
+    // ignore
+  }
+}
 
 function parseWebhookPayload(req: unknown): OneBotWebhookEvent {
   if (req && typeof req === "object" && "body" in req) {
@@ -24,12 +42,14 @@ const plugin = {
   name: "Only OneBot",
   description: "Only OneBot channel plugin",
   register(api: any) {
+    appendPluginDiag("register() called");
     console.log("[onlyonebot:diag] register() called");
     api.registerChannel({ plugin: onlyOneBotPlugin as any });
     console.log("[onlyonebot:diag] registerChannel() done", {
       pluginId: onlyOneBotPlugin?.id,
-      metaId: (onlyOneBotPlugin as any)?.meta?.id,
+        metaId: (onlyOneBotPlugin as any)?.meta?.id,
     });
+    appendPluginDiag("registerChannel() done");
     (api as any).registerCli?.(
       ({ program }: any) => {
         program

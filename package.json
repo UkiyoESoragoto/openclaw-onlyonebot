@@ -1,6 +1,6 @@
 {
   "name": "@openclaw/onlyonebot",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "description": "Minimal OneBot v11 channel plugin for OpenClaw",
   "scripts": {
@@ -20,7 +20,8 @@
     "channel": {
       "id": "onlyonebot",
       "label": "Only OneBot",
-      "blurb": "Minimal OneBot v11 channel plugin for OpenClaw"
+      "blurb": "Minimal OneBot v11 channel plugin for OpenClaw",
+      "preferOver": ["onlyonebot"]
     },
     "compat": {
       "pluginApi": ">=2026.3.24-beta.2",

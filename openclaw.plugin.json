@@ -10,6 +10,7 @@
   },
   "channelConfigs": {
     "onlyonebot": {
+      "preferOver": ["onlyonebot"],
       "schema": {
         "type": "object",
         "additionalProperties": false,
