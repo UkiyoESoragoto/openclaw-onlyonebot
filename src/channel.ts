@@ -118,9 +118,30 @@ function normalizeSetupInput(input: Record<string, unknown>): {
 const pluginCore = createChatChannelPlugin<ResolvedAccount>({
   base: createChannelPluginBase({
     id: "onlyonebot",
+    meta: {
+      label: "Only OneBot",
+      selectionLabel: "OnlyOneBot",
+      docsPath: "https://docs.openclaw.ai/plugins/sdk-channel-plugins",
+      docsLabel: "Channel plugins",
+      blurb: "Minimal OneBot v11 channel plugin for OpenClaw",
+      exposure: { configured: true, setup: true, docs: true },
+      showConfigured: true,
+      showInSetup: true,
+    } as any,
     config: {
       listAccountIds: listOnlyonebotAccountIds,
       resolveAccount,
+      /** Snapshot + UI depend on this when runtime store is still cold. */
+      describeAccount(account: ResolvedAccount, _cfg: OpenClawConfig) {
+        const configured = Boolean(account.token?.trim());
+        const id = account.accountId ?? "default";
+        return {
+          accountId: String(id),
+          name: "OnlyOneBot",
+          enabled: true,
+          configured,
+        };
+      },
       isConfigured(account: ResolvedAccount) {
         return Boolean(account.token?.trim());
       },
@@ -228,7 +249,9 @@ const pluginCore = createChatChannelPlugin<ResolvedAccount>({
         return { messageId: result.id };
       },
     },
-    base: {} as any,
+    base: {
+      deliveryMode: "direct",
+    } as any,
   },
 });
 
