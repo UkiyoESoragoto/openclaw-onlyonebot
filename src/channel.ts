@@ -1,7 +1,3 @@
-import {
-  createChatChannelPlugin,
-  createChannelPluginBase,
-} from "openclaw/plugin-sdk/channel-core";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/channel-core";
 import { onlyOneBotApi } from "./client.js"; // your platform API client
 
@@ -115,97 +111,69 @@ function normalizeSetupInput(input: Record<string, unknown>): {
   return { token, allowFrom };
 }
 
-const pluginCore = createChatChannelPlugin<ResolvedAccount>({
-  base: createChannelPluginBase({
+export const onlyOneBotPlugin = {
+  id: "onlyonebot",
+  meta: {
     id: "onlyonebot",
-    meta: {
-      label: "Only OneBot",
-      selectionLabel: "OnlyOneBot",
-      docsPath: "https://docs.openclaw.ai/plugins/sdk-channel-plugins",
-      docsLabel: "Channel plugins",
-      blurb: "Minimal OneBot v11 channel plugin for OpenClaw",
-      exposure: { configured: true, setup: true, docs: true },
-      showConfigured: true,
-      showInSetup: true,
-    } as any,
-    config: {
-      listAccountIds: listOnlyonebotAccountIds,
-      resolveAccount,
-      /** Snapshot + UI depend on this when runtime store is still cold. */
-      describeAccount(account: ResolvedAccount, _cfg: OpenClawConfig) {
-        const configured = Boolean(account.token?.trim());
-        const id = account.accountId ?? "default";
-        return {
-          accountId: String(id),
-          name: "OnlyOneBot",
-          enabled: true,
-          configured,
-        };
-      },
-      isConfigured(account: ResolvedAccount) {
-        return Boolean(account.token?.trim());
-      },
-      inspectAccount(cfg: OpenClawConfig, accountId?: string | null) {
-        const section = getOnlyonebotSection(cfg);
-        const id =
-          accountId != null && String(accountId).trim() !== ""
-            ? String(accountId).trim()
-            : "default";
-        const token = resolveTokenForAccount(section, id);
-        return {
-          enabled: Boolean(token),
-          configured: Boolean(token),
-          accountId: id,
-          tokenStatus: token ? "available" : "missing",
-        };
-      },
-    } as any,
-    setup: {
-      resolveAccountId({ accountId }: { accountId?: string }) {
-        return accountId && accountId.trim() ? accountId.trim() : "default";
-      },
-      applyAccountConfig({ cfg, input }: { cfg: OpenClawConfig; input: unknown }) {
-        const setupInput = normalizeSetupInput(
-          (input ?? {}) as Record<string, unknown>,
-        );
-        const prevChannel = (cfg.channels as Record<string, unknown>)?.[
-          "onlyonebot"
-        ] as Record<string, unknown> | undefined;
-        const nextChannel: Record<string, unknown> = {
-          ...(prevChannel ?? {}),
-        };
-        if (setupInput.token) {
-          nextChannel.token = setupInput.token;
-        }
-        if (setupInput.allowFrom) {
-          nextChannel.allowFrom = setupInput.allowFrom;
-        }
-        return {
-          ...cfg,
-          channels: {
-            ...(cfg.channels ?? {}),
-            onlyonebot: nextChannel,
-          },
-        };
-      },
-      validateInput({ input }: { input: unknown }) {
-        const setupInput = normalizeSetupInput(
-          (input ?? {}) as Record<string, unknown>,
-        );
-        if (!setupInput.token) {
-          return "token is required";
-        }
-        return null;
-      },
+    label: "Only OneBot",
+    selectionLabel: "OnlyOneBot",
+    docsPath: "https://docs.openclaw.ai/plugins/sdk-channel-plugins",
+    blurb: "Minimal OneBot v11 channel plugin for OpenClaw",
+    order: 90,
+  },
+  capabilities: {
+    chatTypes: ["direct", "group"],
+    reply: true,
+    media: true,
+  },
+  reload: { configPrefixes: ["channels.onlyonebot"] },
+  config: {
+    listAccountIds: listOnlyonebotAccountIds,
+    resolveAccount,
+    defaultAccountId: () => "default",
+    describeAccount(account: ResolvedAccount) {
+      const configured = Boolean(account.token?.trim());
+      const id = account.accountId ?? "default";
+      return {
+        accountId: String(id),
+        name: "OnlyOneBot",
+        enabled: true,
+        configured,
+      };
     },
-    capabilities: {
-      chatTypes: ["direct", "group"],
-      reply: true,
-      media: true,
-    } as any,
-  } as any),
-
-  // DM security: who can message the bot
+    isConfigured(account: ResolvedAccount) {
+      return Boolean(account.token?.trim());
+    },
+    resolveAllowFrom: ({ cfg, accountId }: { cfg: OpenClawConfig; accountId?: string | null }) => {
+      return resolveAllowFromForAccount(getOnlyonebotSection(cfg), accountId);
+    },
+  },
+  setup: {
+    resolveAccountId({ accountId }: { accountId?: string }) {
+      return accountId && accountId.trim() ? accountId.trim() : "default";
+    },
+    applyAccountConfig({ cfg, input }: { cfg: OpenClawConfig; input: unknown }) {
+      const setupInput = normalizeSetupInput((input ?? {}) as Record<string, unknown>);
+      const prevChannel = (cfg.channels as Record<string, unknown>)?.onlyonebot as
+        | Record<string, unknown>
+        | undefined;
+      const nextChannel: Record<string, unknown> = { ...(prevChannel ?? {}) };
+      if (setupInput.token) nextChannel.token = setupInput.token;
+      if (setupInput.allowFrom) nextChannel.allowFrom = setupInput.allowFrom;
+      return {
+        ...cfg,
+        channels: {
+          ...(cfg.channels ?? {}),
+          onlyonebot: nextChannel,
+        },
+      };
+    },
+    validateInput({ input }: { input: unknown }) {
+      const setupInput = normalizeSetupInput((input ?? {}) as Record<string, unknown>);
+      if (!setupInput.token) return "token is required";
+      return null;
+    },
+  },
   security: {
     dm: {
       channelKey: "onlyonebot",
@@ -214,8 +182,6 @@ const pluginCore = createChatChannelPlugin<ResolvedAccount>({
       defaultPolicy: "allowlist",
     },
   },
-
-  // Pairing: approval flow for new DM contacts
   pairing: {
     text: {
       idLabel: "Only OneBot username",
@@ -226,43 +192,44 @@ const pluginCore = createChatChannelPlugin<ResolvedAccount>({
       },
     },
   },
-
-  // Threading: how replies are delivered
-  threading: { topLevelReplyToMode: "reply" },
-
-  // Outbound: send messages to the platform
   outbound: {
-    attachedResults: {
-      channel: "onlyonebot",
-      sendText: async (params: any) => {
-        if (!params?.cfg) {
-          throw new Error("onlyonebot: missing cfg on send context");
-        }
-        const acc = resolveAccount(params.cfg as OpenClawConfig, params.accountId);
-        if (!acc.token?.trim()) {
-          throw new Error("onlyonebot: token is required to send");
-        }
-        const result = await onlyOneBotApi.sendMessage(
-          params.to,
-          params.text,
-        );
-        return { messageId: result.id };
-      },
+    deliveryMode: "direct",
+    sendText: async ({
+      to,
+      text,
+      accountId,
+      cfg,
+    }: {
+      to: string;
+      text: string;
+      accountId?: string | null;
+      cfg: OpenClawConfig;
+    }) => {
+      const acc = resolveAccount(cfg, accountId);
+      if (!acc.token?.trim()) throw new Error("onlyonebot: token is required to send");
+      const result = await onlyOneBotApi.sendMessage(to, text);
+      return {
+        channel: "onlyonebot" as const,
+        messageId: result.id,
+      };
     },
-    base: {
-      deliveryMode: "direct",
-    } as any,
   },
-});
-
-export const onlyOneBotPlugin = {
-  ...(pluginCore as Record<string, unknown>),
   gateway: {
-    /**
-     * Webhook-style channel: no long-lived connection. Hold until abort so
-     * gateway marks the account running and health/UI can list the channel.
-     */
-    startAccount: async ({ abortSignal }: { abortSignal: AbortSignal }) => {
+    startAccount: async ({
+      abortSignal,
+      setStatus,
+      getStatus,
+    }: {
+      abortSignal: AbortSignal;
+      setStatus: (next: Record<string, unknown>) => void;
+      getStatus: () => Record<string, unknown>;
+    }) => {
+      setStatus({
+        ...getStatus(),
+        running: true,
+        connected: true,
+        lastConnectedAt: Date.now(),
+      });
       await new Promise<void>((resolve) => {
         if (abortSignal.aborted) {
           resolve();
@@ -273,6 +240,11 @@ export const onlyOneBotPlugin = {
           resolve();
         };
         abortSignal.addEventListener("abort", onAbort, { once: true });
+      });
+      setStatus({
+        ...getStatus(),
+        running: false,
+        connected: false,
       });
     },
   },
@@ -314,6 +286,16 @@ export const onlyOneBotPlugin = {
         running: configured,
       };
     },
+    buildChannelSummary: ({
+      snapshot,
+    }: {
+      snapshot: Record<string, unknown>;
+    }) => ({
+      configured: Boolean(snapshot.configured),
+      running: Boolean(snapshot.running),
+      connected: Boolean(snapshot.connected),
+      statusState: snapshot.statusState ?? "unknown",
+    }),
     formatCapabilitiesProbe: ({
       probe,
     }: {
