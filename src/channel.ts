@@ -59,12 +59,20 @@ export const onlyOneBotPlugin = {
   },
   config: {
     listAccountIds: (cfg: AnyRecord): string[] => {
-      return Object.keys(getAccounts(cfg));
+      const ids = Object.keys(getAccounts(cfg));
+      return ids.length > 0 ? ids : ["default"];
     },
     resolveAccount: (cfg: AnyRecord, accountId: string | undefined): OneBotAccount | undefined => {
       const accounts = getAccounts(cfg);
       const resolvedId = accountId ?? "default";
-      return toAccount(resolvedId, accounts[resolvedId]);
+      const fromConfig = toAccount(resolvedId, accounts[resolvedId]);
+      if (fromConfig) return fromConfig;
+      return {
+        accountId: resolvedId,
+        enabled: true,
+        baseUrl: "http://127.0.0.1:5700",
+        accessToken: "",
+      };
     },
   },
   outbound: {
