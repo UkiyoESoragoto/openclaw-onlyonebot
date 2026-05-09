@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PLUGIN_NAME="onlyonebot"
+PLUGIN_NAME="openclaw-onlyonebot"
 
 install_and_restart() {
   openclaw plugins install . --force && openclaw gateway restart

@@ -1,12 +1,13 @@
 {
-  "id": "onlyonebot",
-  "kind": "channel",
+  "id": "openclaw-onlyonebot",
+  "name": "Only OneBot",
+  "description": "占位 OneBot 渠道插件，用于验证 OpenClaw 插件安装与 Channel 配置界面",
   "channels": ["onlyonebot"],
-  "name": "OnlyOneBot",
-  "description": "Minimal OneBot v11 channel plugin",
+  "extensions": ["./preload.cjs"],
   "configSchema": {
     "type": "object",
-    "additionalProperties": false
+    "additionalProperties": false,
+    "properties": {}
   },
   "channelConfigs": {
     "onlyonebot": {
@@ -15,22 +16,20 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "token": { "type": "string" },
-          "allowFrom": {
-            "type": "array",
-            "items": { "type": "string" }
+          "token": {
+            "type": "string",
+            "description": "占位 token，任意非空字符串即可通过验证"
           }
-        }
+        },
+        "required": ["token"]
       },
       "uiHints": {
         "token": {
-          "label": "Bot token",
-          "sensitive": true
+          "label": "访问令牌（占位）",
+          "sensitive": true,
+          "placeholder": "stub-token"
         }
       }
     }
-  },
-  "activation": {
-    "onStartup": true
   }
 }

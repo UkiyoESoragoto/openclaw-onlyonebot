@@ -1,278 +1,128 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/channel-core";
-import { onlyOneBotApi } from "./client.js"; // your platform API client
+import type { ChannelPlugin } from "openclaw/plugin-sdk";
 
-type ResolvedAccount = {
-  accountId: string | null;
-  token: string;
-  enabled: boolean;
-  allowFrom: string[];
-  dmPolicy: string | undefined;
-};
+import {
+  type ResolvedOnlyonebotAccount,
+  listOnlyonebotAccountIds,
+  resolveDefaultOnlyonebotAccountId,
+  resolveOnlyonebotAccount,
+} from "./config.js";
+import { onlyOneBotOnboardingAdapter } from "./onboarding.js";
 
-function getOnlyonebotSection(cfg: OpenClawConfig): Record<string, any> | undefined {
-  const ch = cfg.channels as Record<string, unknown> | undefined;
-  const section = ch?.onlyonebot;
-  if (!section || typeof section !== "object" || Array.isArray(section)) {
-    return undefined;
-  }
-  return section as Record<string, any>;
-}
-
-/** Token may live at `channels.onlyonebot.token` or `channels.onlyonebot.accounts.<id>.token`. */
-function resolveTokenForAccount(
-  section: Record<string, any> | undefined,
-  accountId?: string | null,
-): string {
-  if (!section) return "";
-  const id =
-    accountId != null && String(accountId).trim() !== ""
-      ? String(accountId).trim()
-      : "default";
-  const accounts = section.accounts;
-  if (accounts && typeof accounts === "object" && !Array.isArray(accounts)) {
-    const rec = accounts as Record<string, any>;
-    const acct = rec[id] ?? rec.default;
-    if (acct && typeof acct === "object" && typeof acct.token === "string") {
-      return acct.token.trim();
-    }
-  }
-  if (typeof section.token === "string") {
-    return section.token.trim();
-  }
-  return "";
-}
-
-function resolveAllowFromForAccount(
-  section: Record<string, any> | undefined,
-  accountId?: string | null,
-): string[] {
-  if (!section) return [];
-  const id =
-    accountId != null && String(accountId).trim() !== ""
-      ? String(accountId).trim()
-      : "default";
-  const accounts = section.accounts;
-  if (accounts && typeof accounts === "object" && !Array.isArray(accounts)) {
-    const rec = accounts as Record<string, any>;
-    const acct = rec[id] ?? rec.default;
-    if (acct && typeof acct === "object" && Array.isArray(acct.allowFrom)) {
-      return acct.allowFrom.filter((v: unknown): v is string => typeof v === "string");
-    }
-  }
-  if (Array.isArray(section.allowFrom)) {
-    return section.allowFrom.filter((v: unknown): v is string => typeof v === "string");
-  }
-  return [];
-}
-
-function listOnlyonebotAccountIds(cfg: OpenClawConfig): string[] {
-  const section = getOnlyonebotSection(cfg);
-  if (!section) {
-    console.log("[onlyonebot:diag] listAccountIds: no section");
-    return [];
-  }
-  const accounts = section.accounts;
-  if (accounts && typeof accounts === "object" && !Array.isArray(accounts)) {
-    const ids = Object.keys(accounts as Record<string, unknown>).filter(Boolean);
-    if (ids.length > 0) {
-      console.log("[onlyonebot:diag] listAccountIds from accounts", ids);
-      return ids;
-    }
-  }
-  if (resolveTokenForAccount(section, "default")) {
-    console.log("[onlyonebot:diag] listAccountIds fallback default");
-    return ["default"];
-  }
-  console.log("[onlyonebot:diag] listAccountIds empty after checks");
-  return [];
-}
-
-function resolveAccount(
-  cfg: OpenClawConfig,
-  accountId?: string | null,
-): ResolvedAccount {
-  const section = getOnlyonebotSection(cfg);
-  const id =
-    accountId != null && String(accountId).trim() !== ""
-      ? String(accountId).trim()
-      : "default";
-  const token = resolveTokenForAccount(section, id);
-  const allowFrom = resolveAllowFromForAccount(section, id);
-  const sectionEnabled = section?.enabled;
-  const accountEnabled =
-    section?.accounts &&
-    typeof section.accounts === "object" &&
-    !Array.isArray(section.accounts) &&
-    (section.accounts as Record<string, any>)[id] &&
-    typeof (section.accounts as Record<string, any>)[id] === "object"
-      ? (section.accounts as Record<string, any>)[id].enabled
-      : undefined;
-  const enabled =
-    typeof accountEnabled === "boolean"
-      ? accountEnabled
-      : typeof sectionEnabled === "boolean"
-        ? sectionEnabled
-        : true;
-  const dmPolicy =
-    section?.dmSecurity ?? section?.dmPolicy ?? undefined;
-  console.log("[onlyonebot:diag] resolveAccount", {
-    accountId: id,
-    enabled,
-    hasToken: Boolean(token?.trim()),
-    allowFromCount: allowFrom.length,
-  });
-  return {
-    accountId: id === "default" ? null : id,
-    token,
-    enabled,
-    allowFrom,
-    dmPolicy,
-  };
-}
-
-function normalizeSetupInput(input: Record<string, unknown>): {
-  token?: string;
-  allowFrom?: string[];
-} {
-  const token =
-    typeof input.token === "string" && input.token.trim()
-      ? input.token.trim()
-      : undefined;
-  const allowFrom = Array.isArray(input.allowFrom)
-    ? input.allowFrom.filter((v): v is string => typeof v === "string")
-    : undefined;
-  return { token, allowFrom };
-}
-
-export const onlyOneBotPlugin = {
+export const onlyOneBotPlugin: ChannelPlugin<ResolvedOnlyonebotAccount> = {
   id: "onlyonebot",
   meta: {
     id: "onlyonebot",
     label: "Only OneBot",
     selectionLabel: "OnlyOneBot",
     docsPath: "https://docs.openclaw.ai/plugins/sdk-channel-plugins",
-    blurb: "Minimal OneBot v11 channel plugin for OpenClaw",
-    order: 90,
+    blurb: "占位 OneBot 渠道插件（用于验证安装与 UI）",
+    order: 95,
   },
   capabilities: {
     chatTypes: ["direct", "group"],
     reply: true,
-    media: true,
+    media: false,
   },
   reload: { configPrefixes: ["channels.onlyonebot"] },
+  onboarding: onlyOneBotOnboardingAdapter,
+
   config: {
     listAccountIds: listOnlyonebotAccountIds,
-    resolveAccount,
-    defaultAccountId: () => "default",
-    describeAccount(account: ResolvedAccount) {
-      const configured = Boolean(account.token?.trim());
-      const id = account.accountId ?? "default";
+    resolveAccount: resolveOnlyonebotAccount,
+    defaultAccountId: resolveDefaultOnlyonebotAccountId,
+    describeAccount(account) {
+      const configured = Boolean(account?.token?.trim());
+      const id = account?.accountId ?? "default";
       return {
         accountId: String(id),
         name: "OnlyOneBot",
-        enabled: account.enabled,
+        enabled: account?.enabled ?? false,
         configured,
       };
     },
-    isConfigured(account: ResolvedAccount) {
-      return Boolean(account.token?.trim());
-    },
-    resolveAllowFrom: ({ cfg, accountId }: { cfg: OpenClawConfig; accountId?: string | null }) => {
-      return resolveAllowFromForAccount(getOnlyonebotSection(cfg), accountId);
+    isConfigured(account) {
+      return Boolean(account?.token?.trim());
     },
   },
+
   setup: {
-    resolveAccountId({ accountId }: { accountId?: string }) {
-      return accountId && accountId.trim() ? accountId.trim() : "default";
+    resolveAccountId({ accountId }) {
+      return accountId?.trim() || "default";
     },
-    applyAccountConfig({ cfg, input }: { cfg: OpenClawConfig; input: unknown }) {
-      const setupInput = normalizeSetupInput((input ?? {}) as Record<string, unknown>);
-      const prevChannel = (cfg.channels as Record<string, unknown>)?.onlyonebot as
-        | Record<string, unknown>
-        | undefined;
-      const nextChannel: Record<string, unknown> = { ...(prevChannel ?? {}) };
-      if (setupInput.token) nextChannel.token = setupInput.token;
-      if (setupInput.allowFrom) nextChannel.allowFrom = setupInput.allowFrom;
+    validateInput({ input }) {
+      const token =
+        input?.token != null && typeof input.token === "string" ? input.token.trim() : "";
+      if (!token) return "token is required";
+      return null;
+    },
+    applyAccountConfig({ cfg, accountId, input }) {
+      const token =
+        input?.token != null && typeof input.token === "string" ? input.token.trim() : "";
+      const id = accountId?.trim() || "default";
+      const prevRoot = (cfg.channels?.onlyonebot as Record<string, unknown>) || {};
+
+      if (id === "default") {
+        return {
+          ...cfg,
+          channels: {
+            ...cfg.channels,
+            onlyonebot: {
+              ...prevRoot,
+              token,
+              enabled: true,
+            },
+          },
+        };
+      }
+
+      const prevAccounts =
+        prevRoot.accounts && typeof prevRoot.accounts === "object" && !Array.isArray(prevRoot.accounts)
+          ? { ...(prevRoot.accounts as Record<string, unknown>) }
+          : {};
+      const prevAcct = (prevAccounts[id] as Record<string, unknown>) || {};
+
       return {
         ...cfg,
         channels: {
-          ...(cfg.channels ?? {}),
-          onlyonebot: nextChannel,
+          ...cfg.channels,
+          onlyonebot: {
+            ...prevRoot,
+            accounts: {
+              ...prevAccounts,
+              [id]: {
+                ...prevAcct,
+                token,
+                enabled: true,
+              },
+            },
+          },
         },
       };
     },
-    validateInput({ input }: { input: unknown }) {
-      const setupInput = normalizeSetupInput((input ?? {}) as Record<string, unknown>);
-      if (!setupInput.token) return "token is required";
-      return null;
-    },
   },
-  security: {
-    dm: {
-      channelKey: "onlyonebot",
-      resolvePolicy: (account: ResolvedAccount) => account.dmPolicy,
-      resolveAllowFrom: (account: ResolvedAccount) => account.allowFrom,
-      defaultPolicy: "allowlist",
-    },
-  },
-  pairing: {
-    text: {
-      idLabel: "Only OneBot username",
-      message: "Send this code to verify your identity:",
-      notify: async ({ message }: { message?: string }) => {
-        const target = String(message ?? "");
-        await onlyOneBotApi.sendDm(target, `Pairing request: ${message ?? ""}`);
-      },
-    },
-  },
+
   outbound: {
     deliveryMode: "direct",
-    sendText: async ({
-      to,
-      text,
-      accountId,
-      cfg,
-    }: {
-      to: string;
-      text: string;
-      accountId?: string | null;
-      cfg: OpenClawConfig;
-    }) => {
-      const acc = resolveAccount(cfg, accountId);
-      if (!acc.token?.trim()) throw new Error("onlyonebot: token is required to send");
-      const result = await onlyOneBotApi.sendMessage(to, text);
-      return {
-        channel: "onlyonebot" as const,
-        messageId: result.id,
-      };
-    },
+    sendText: async () => ({
+      channel: "onlyonebot" as const,
+      messageId: "stub",
+    }),
   },
+
   gateway: {
-    startAccount: async ({
-      abortSignal,
-      setStatus,
-      getStatus,
-    }: {
-      abortSignal: AbortSignal;
-      setStatus: (next: Record<string, unknown>) => void;
-      getStatus: () => Record<string, unknown>;
-    }) => {
-      console.log("[onlyonebot:diag] gateway.startAccount enter");
+    startAccount: async ({ abortSignal, setStatus, getStatus }) => {
       setStatus({
         ...getStatus(),
         running: true,
         connected: true,
         lastConnectedAt: Date.now(),
       });
-      console.log("[onlyonebot:diag] gateway.startAccount status set running");
       await new Promise<void>((resolve) => {
         if (abortSignal.aborted) {
-          console.log("[onlyonebot:diag] gateway.startAccount abort already set");
           resolve();
           return;
         }
         const onAbort = () => {
-          console.log("[onlyonebot:diag] gateway.startAccount abort signal received");
           abortSignal.removeEventListener("abort", onAbort);
           resolve();
         };
@@ -283,9 +133,9 @@ export const onlyOneBotPlugin = {
         running: false,
         connected: false,
       });
-      console.log("[onlyonebot:diag] gateway.startAccount exit");
     },
   },
+
   status: {
     defaultRuntime: {
       accountId: "default",
@@ -293,24 +143,17 @@ export const onlyOneBotPlugin = {
       enabled: true,
       configured: false,
     },
-    probeAccount: async ({
-      account,
-    }: {
-      account: ResolvedAccount;
-      timeoutMs: number;
-      cfg: OpenClawConfig;
-    }) => {
-      const token = account.token?.trim();
-      if (!token) {
+    probeAccount: async ({ account }: { account: ResolvedOnlyonebotAccount }) => {
+      if (!account.token?.trim()) {
         return { ok: false as const, error: "token missing" };
       }
       return { ok: true as const };
     },
-    buildAccountSnapshot: async ({
+    buildAccountSnapshot: ({
       account,
     }: {
-      account: ResolvedAccount;
-      cfg: OpenClawConfig;
+      account: ResolvedOnlyonebotAccount;
+      runtime?: unknown;
     }) => {
       const configured = Boolean(account.token?.trim());
       const id = account.accountId ?? "default";
@@ -324,11 +167,7 @@ export const onlyOneBotPlugin = {
         running: configured && account.enabled,
       };
     },
-    buildChannelSummary: ({
-      snapshot,
-    }: {
-      snapshot: Record<string, unknown>;
-    }) => ({
+    buildChannelSummary: ({ snapshot }) => ({
       configured: Boolean(snapshot.configured),
       running: Boolean(snapshot.running),
       connected: Boolean(snapshot.connected),
@@ -340,17 +179,23 @@ export const onlyOneBotPlugin = {
       probe: { ok: boolean; error?: unknown };
     }) => {
       if (probe.ok) {
-        return [{ text: "OnlyOneBot token present", tone: "success" as const }];
+        return [{ text: "token present", tone: "success" as const }];
       }
       return [
         {
-          text:
-            typeof probe.error === "string"
-              ? probe.error
-              : "OnlyOneBot not configured",
+          text: typeof probe.error === "string" ? probe.error : "not configured",
           tone: "warn" as const,
         },
       ];
     },
   },
-} as any;
+
+  security: {
+    dm: {
+      channelKey: "onlyonebot",
+      resolvePolicy: () => "open",
+      resolveAllowFrom: () => [],
+      defaultPolicy: "open",
+    },
+  },
+};

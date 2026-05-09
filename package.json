@@ -1,35 +1,42 @@
 {
   "name": "@openclaw/onlyonebot",
-  "version": "0.1.6",
+  "version": "0.1.7",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
-  "description": "Minimal OneBot v11 channel plugin for OpenClaw",
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
-  },
-  "devDependencies": {
-    "@types/node": "^25.6.2",
-    "openclaw": "^0.0.1",
-    "typescript": "^5.9.3"
-  },
+  "description": "占位 OneBot 渠道插件（验证 OpenClaw 安装流程）",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "scripts",
+    "src",
+    "index.ts",
+    "setup-entry.ts",
+    "preload.cjs",
+    "tsconfig.json",
+    "openclaw.plugin.json"
+  ],
   "openclaw": {
-    "extensions": [
-      "./dist/index.js"
-    ],
+    "id": "openclaw-onlyonebot",
+    "extensions": ["./preload.cjs"],
     "setupEntry": "./dist/setup-entry.js",
     "channel": {
       "id": "onlyonebot",
-      "label": "Only OneBot",
-      "blurb": "Minimal OneBot v11 channel plugin for OpenClaw",
-      "preferOver": ["onlyonebot"]
-    },
-    "compat": {
-      "pluginApi": ">=2026.3.24-beta.2",
-      "minGatewayVersion": "2026.3.24-beta.2"
-    },
-    "build": {
-      "openclawVersion": "2026.3.24-beta.2",
-      "pluginSdkVersion": "2026.3.24-beta.2"
+      "label": "Only OneBot"
     }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "postinstall": "node scripts/postinstall-link-sdk.js"
+  },
+  "peerDependencies": {
+    "openclaw": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.9.3"
   }
 }
