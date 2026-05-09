@@ -1,2 +1,1 @@
-import { onlyOneBotPlugin } from "./src/channel.js";
-export default onlyOneBotPlugin;
+export { onlyOneBotOnboardingAdapter } from "./src/onboarding.js";

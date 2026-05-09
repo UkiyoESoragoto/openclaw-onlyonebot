@@ -1,39 +1,21 @@
 {
   "name": "openclaw-onlyonebot",
-  "version": "0.1.10",
-  "publishConfig": {
-    "access": "public"
-  },
+  "version": "0.1.0",
+  "description": "Minimal OpenClaw OneBot channel plugin",
   "type": "module",
-  "description": "占位 OneBot 渠道插件（验证 OpenClaw 安装流程）",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "src",
-    "index.ts",
-    "setup-entry.ts",
-    "tsconfig.json",
-    "openclaw.plugin.json"
+    "openclaw.plugin.json",
+    "install.sh"
   ],
-  "openclaw": {
-    "id": "openclaw-onlyonebot",
-    "extensions": ["./dist/index.js"],
-    "setupEntry": "./dist/setup-entry.js",
-    "channel": {
-      "id": "onlyonebot",
-      "label": "Only OneBot"
-    }
-  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch"
-  },
-  "peerDependencies": {
-    "openclaw": "*"
+    "clean": "rimraf dist"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.9.3"
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3"
   }
 }

@@ -1,35 +1,37 @@
 {
   "id": "openclaw-onlyonebot",
   "name": "Only OneBot",
-  "description": "占位 OneBot 渠道插件，用于验证 OpenClaw 插件安装与 Channel 配置界面",
-  "channels": ["onlyonebot"],
-  "extensions": ["./dist/index.js"],
+  "version": "0.1.0",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
-    "properties": {}
-  },
-  "channelConfigs": {
-    "onlyonebot": {
-      "preferOver": ["onlyonebot"],
-      "schema": {
+    "properties": {
+      "accounts": {
         "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "token": {
-            "type": "string",
-            "description": "占位 token，任意非空字符串即可通过验证"
-          }
-        },
-        "required": ["token"]
-      },
-      "uiHints": {
-        "token": {
-          "label": "访问令牌（占位）",
-          "sensitive": true,
-          "placeholder": "stub-token"
+        "additionalProperties": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "baseUrl": { "type": "string", "minLength": 1 },
+            "accessToken": { "type": "string" }
+          },
+          "required": ["baseUrl"]
         }
       }
+    }
+  },
+  "uiHints": {
+    "accounts": {
+      "label": "OneBot Accounts"
+    },
+    "accounts.*.baseUrl": {
+      "label": "OneBot HTTP Base URL",
+      "placeholder": "http://127.0.0.1:5700"
+    },
+    "accounts.*.accessToken": {
+      "label": "Access Token",
+      "sensitive": true
     }
   }
 }

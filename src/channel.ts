@@ -1,201 +1,115 @@
-import type { ChannelPlugin } from "openclaw/plugin-sdk";
+type AnyRecord = Record<string, any>;
 
-import {
-  type ResolvedOnlyonebotAccount,
-  listOnlyonebotAccountIds,
-  resolveDefaultOnlyonebotAccountId,
-  resolveOnlyonebotAccount,
-} from "./config.js";
-import { onlyOneBotOnboardingAdapter } from "./onboarding.js";
+interface OneBotAccount {
+  accountId: string;
+  enabled: boolean;
+  baseUrl: string;
+  accessToken?: string;
+}
 
-export const onlyOneBotPlugin: ChannelPlugin<ResolvedOnlyonebotAccount> = {
-  id: "onlyonebot",
+function getAccounts(config: AnyRecord): Record<string, AnyRecord> {
+  return config?.channels?.onebot?.accounts ?? {};
+}
+
+function toAccount(accountId: string, raw: AnyRecord | undefined): OneBotAccount | undefined {
+  if (!raw || !raw.baseUrl) return undefined;
+  return {
+    accountId,
+    enabled: raw.enabled ?? true,
+    baseUrl: String(raw.baseUrl),
+    accessToken: raw.accessToken ? String(raw.accessToken) : undefined,
+  };
+}
+
+function buildSendPayload(target: AnyRecord, text: string): AnyRecord {
+  const isGroup = target?.chatType === "group" || target?.isGroup === true;
+  if (isGroup) {
+    return {
+      message_type: "group",
+      group_id: Number(target.id) || target.id,
+      message: text,
+    };
+  }
+  return {
+    message_type: "private",
+    user_id: Number(target?.id) || target?.id,
+    message: text,
+  };
+}
+
+export const onlyOneBotPlugin = {
+  id: "onebot",
   meta: {
-    id: "onlyonebot",
-    label: "Only OneBot",
-    selectionLabel: "OnlyOneBot",
-    docsPath: "https://docs.openclaw.ai/plugins/sdk-channel-plugins",
-    blurb: "占位 OneBot 渠道插件（用于验证安装与 UI）",
-    order: 95,
+    id: "onebot",
+    label: "OneBot",
+    selectionLabel: "OneBot (HTTP API)",
+    docsPath: "/channels/onebot",
+    blurb: "Minimal OneBot channel plugin.",
+    aliases: ["ob"],
   },
   capabilities: {
     chatTypes: ["direct", "group"],
-    reply: true,
-    media: false,
+    supports: {
+      mentions: false,
+      threads: false,
+      reactions: false,
+      edits: false,
+      deletions: false,
+    },
   },
-  reload: { configPrefixes: ["channels.onlyonebot"] },
-  onboarding: onlyOneBotOnboardingAdapter,
-
   config: {
-    listAccountIds: listOnlyonebotAccountIds,
-    resolveAccount: resolveOnlyonebotAccount,
-    defaultAccountId: resolveDefaultOnlyonebotAccountId,
-    describeAccount(account) {
-      const configured = Boolean(account?.token?.trim());
-      const id = account?.accountId ?? "default";
-      return {
-        accountId: String(id),
-        name: "OnlyOneBot",
-        enabled: account?.enabled ?? false,
-        configured,
-      };
+    listAccountIds: (cfg: AnyRecord): string[] => {
+      return Object.keys(getAccounts(cfg));
     },
-    isConfigured(account) {
-      return Boolean(account?.token?.trim());
+    resolveAccount: (cfg: AnyRecord, accountId: string | undefined): OneBotAccount | undefined => {
+      const accounts = getAccounts(cfg);
+      const resolvedId = accountId ?? "default";
+      return toAccount(resolvedId, accounts[resolvedId]);
     },
   },
-
-  setup: {
-    resolveAccountId({ accountId }) {
-      return accountId?.trim() || "default";
-    },
-    validateInput({ input }) {
-      const token =
-        input?.token != null && typeof input.token === "string" ? input.token.trim() : "";
-      if (!token) return "token is required";
-      return null;
-    },
-    applyAccountConfig({ cfg, accountId, input }) {
-      const token =
-        input?.token != null && typeof input.token === "string" ? input.token.trim() : "";
-      const id = accountId?.trim() || "default";
-      const prevRoot = (cfg.channels?.onlyonebot as Record<string, unknown>) || {};
-
-      if (id === "default") {
-        return {
-          ...cfg,
-          channels: {
-            ...cfg.channels,
-            onlyonebot: {
-              ...prevRoot,
-              token,
-              enabled: true,
-            },
-          },
-        };
-      }
-
-      const prevAccounts =
-        prevRoot.accounts && typeof prevRoot.accounts === "object" && !Array.isArray(prevRoot.accounts)
-          ? { ...(prevRoot.accounts as Record<string, unknown>) }
-          : {};
-      const prevAcct = (prevAccounts[id] as Record<string, unknown>) || {};
-
-      return {
-        ...cfg,
-        channels: {
-          ...cfg.channels,
-          onlyonebot: {
-            ...prevRoot,
-            accounts: {
-              ...prevAccounts,
-              [id]: {
-                ...prevAcct,
-                token,
-                enabled: true,
-              },
-            },
-          },
-        },
-      };
-    },
-  },
-
   outbound: {
     deliveryMode: "direct",
-    sendText: async () => ({
-      channel: "onlyonebot" as const,
-      messageId: "stub",
-    }),
-  },
-
-  gateway: {
-    startAccount: async ({ abortSignal, setStatus, getStatus }) => {
-      setStatus({
-        ...getStatus(),
-        running: true,
-        connected: true,
-        lastConnectedAt: Date.now(),
-      });
-      await new Promise<void>((resolve) => {
-        if (abortSignal.aborted) {
-          resolve();
-          return;
-        }
-        const onAbort = () => {
-          abortSignal.removeEventListener("abort", onAbort);
-          resolve();
-        };
-        abortSignal.addEventListener("abort", onAbort, { once: true });
-      });
-      setStatus({
-        ...getStatus(),
-        running: false,
-        connected: false,
-      });
-    },
-  },
-
-  status: {
-    defaultRuntime: {
-      accountId: "default",
-      name: "OnlyOneBot",
-      enabled: true,
-      configured: false,
-    },
-    probeAccount: async ({ account }: { account: ResolvedOnlyonebotAccount }) => {
-      if (!account.token?.trim()) {
-        return { ok: false as const, error: "token missing" };
+    sendText: async ({ text, target, account }: AnyRecord): Promise<AnyRecord> => {
+      if (!account?.baseUrl) {
+        return { ok: false, error: "Missing account.baseUrl in channel config." };
       }
-      return { ok: true as const };
-    },
-    buildAccountSnapshot: ({
-      account,
-    }: {
-      account: ResolvedOnlyonebotAccount;
-      runtime?: unknown;
-    }) => {
-      const configured = Boolean(account.token?.trim());
-      const id = account.accountId ?? "default";
-      return {
-        accountId: String(id),
-        name: "OnlyOneBot",
-        enabled: account.enabled,
-        configured,
-        statusState: configured ? "ready" : "unconfigured",
-        connected: configured,
-        running: configured && account.enabled,
+      if (!target?.id) {
+        return { ok: false, error: "Missing target.id." };
+      }
+
+      const url = `${String(account.baseUrl).replace(/\/$/, "")}/send_msg`;
+      const payload = buildSendPayload(target, String(text ?? ""));
+      const headers: Record<string, string> = {
+        "content-type": "application/json",
       };
-    },
-    buildChannelSummary: ({ snapshot }) => ({
-      configured: Boolean(snapshot.configured),
-      running: Boolean(snapshot.running),
-      connected: Boolean(snapshot.connected),
-      statusState: snapshot.statusState ?? "unknown",
-    }),
-    formatCapabilitiesProbe: ({
-      probe,
-    }: {
-      probe: { ok: boolean; error?: unknown };
-    }) => {
-      if (probe.ok) {
-        return [{ text: "token present", tone: "success" as const }];
+      if (account.accessToken) {
+        headers.authorization = `Bearer ${account.accessToken}`;
       }
-      return [
-        {
-          text: typeof probe.error === "string" ? probe.error : "not configured",
-          tone: "warn" as const,
-        },
-      ];
-    },
-  },
 
-  security: {
-    dm: {
-      channelKey: "onlyonebot",
-      resolvePolicy: () => "open",
-      resolveAllowFrom: () => [],
-      defaultPolicy: "open",
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          return {
+            ok: false,
+            error: `OneBot HTTP ${response.status} ${response.statusText}`,
+          };
+        }
+
+        const data = (await response.json().catch(() => ({}))) as AnyRecord;
+        return {
+          ok: true,
+          messageId: data?.data?.message_id ?? data?.message_id,
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : "Unknown send error",
+        };
+      }
     },
   },
 };
