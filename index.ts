@@ -1,4 +1,3 @@
-import { defineChannelPluginEntry } from "openclaw/plugin-sdk/channel-core";
 import { onlyOneBotPlugin } from "./src/channel.js";
 
 type OneBotWebhookEvent = Record<string, unknown>;
@@ -20,13 +19,13 @@ async function handleOnlyOneBotInbound(
   // Placeholder for inbound dispatch wiring.
 }
 
-const entry: any = defineChannelPluginEntry({
+const plugin = {
   id: "onlyonebot",
   name: "Only OneBot",
   description: "Only OneBot channel plugin",
-  plugin: onlyOneBotPlugin,
-  registerCliMetadata(api: any) {
-    api.registerCli(
+  register(api: any) {
+    api.registerChannel({ plugin: onlyOneBotPlugin as any });
+    (api as any).registerCli?.(
       ({ program }: any) => {
         program
           .command("onlyonebot")
@@ -42,9 +41,7 @@ const entry: any = defineChannelPluginEntry({
         ],
       },
     );
-  },
-  registerFull(api: any) {
-    api.registerHttpRoute({
+    (api as any).registerHttpRoute?.({
       path: "/onlyonebot/webhook",
       auth: "plugin", // plugin-managed auth (verify signatures yourself)
       handler: async (req: any, res: any) => {
@@ -61,6 +58,6 @@ const entry: any = defineChannelPluginEntry({
       },
     });
   },
-});
+};
 
-export default entry;
+export default plugin;
