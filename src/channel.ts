@@ -1,5 +1,7 @@
 type AnyRecord = Record<string, any>;
 
+console.info("[openclaw-onlyonebot] channel module loaded");
+
 interface OneBotAccount {
   accountId: string;
   enabled: boolean;

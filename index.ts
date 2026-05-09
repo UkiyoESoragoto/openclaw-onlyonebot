@@ -1,5 +1,7 @@
 import { onlyOneBotPlugin } from "./src/channel.js";
 
+console.info("[openclaw-onlyonebot] index module loaded");
+
 const plugin = {
   id: "openclaw-onlyonebot",
   name: "Only OneBot",
