@@ -60,19 +60,33 @@ export const onlyOneBotPlugin = {
   config: {
     listAccountIds: (cfg: AnyRecord): string[] => {
       const ids = Object.keys(getAccounts(cfg));
-      return ids.length > 0 ? ids : ["default"];
+      const finalIds = ids.length > 0 ? ids : ["default"];
+      console.info("[openclaw-onlyonebot] listAccountIds", { ids: finalIds, sourceCount: ids.length });
+      return finalIds;
     },
     resolveAccount: (cfg: AnyRecord, accountId: string | undefined): OneBotAccount | undefined => {
       const accounts = getAccounts(cfg);
       const resolvedId = accountId ?? "default";
       const fromConfig = toAccount(resolvedId, accounts[resolvedId]);
-      if (fromConfig) return fromConfig;
-      return {
+      if (fromConfig) {
+        console.info("[openclaw-onlyonebot] resolveAccount from config", {
+          accountId: resolvedId,
+          baseUrl: fromConfig.baseUrl,
+          enabled: fromConfig.enabled,
+        });
+        return fromConfig;
+      }
+      const fallback = {
         accountId: resolvedId,
         enabled: true,
         baseUrl: "http://127.0.0.1:5700",
         accessToken: "",
       };
+      console.warn("[openclaw-onlyonebot] resolveAccount fallback", {
+        accountId: resolvedId,
+        baseUrl: fallback.baseUrl,
+      });
+      return fallback;
     },
   },
   outbound: {
@@ -87,6 +101,12 @@ export const onlyOneBotPlugin = {
 
       const url = `${String(account.baseUrl).replace(/\/$/, "")}/send_msg`;
       const payload = buildSendPayload(target, String(text ?? ""));
+      console.info("[openclaw-onlyonebot] sendText request", {
+        accountId: account?.accountId ?? "default",
+        targetId: target?.id,
+        messageType: payload.message_type,
+        url,
+      });
       const headers: Record<string, string> = {
         "content-type": "application/json",
       };
@@ -101,6 +121,10 @@ export const onlyOneBotPlugin = {
           body: JSON.stringify(payload),
         });
         if (!response.ok) {
+          console.error("[openclaw-onlyonebot] sendText failed", {
+            status: response.status,
+            statusText: response.statusText,
+          });
           return {
             ok: false,
             error: `OneBot HTTP ${response.status} ${response.statusText}`,
@@ -108,11 +132,17 @@ export const onlyOneBotPlugin = {
         }
 
         const data = (await response.json().catch(() => ({}))) as AnyRecord;
+        console.info("[openclaw-onlyonebot] sendText ok", {
+          messageId: data?.data?.message_id ?? data?.message_id ?? null,
+        });
         return {
           ok: true,
           messageId: data?.data?.message_id ?? data?.message_id,
         };
       } catch (error) {
+        console.error("[openclaw-onlyonebot] sendText exception", {
+          error: error instanceof Error ? error.message : String(error),
+        });
         return {
           ok: false,
           error: error instanceof Error ? error.message : "Unknown send error",

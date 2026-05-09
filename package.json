@@ -1,6 +1,6 @@
 {
   "name": "openclaw-onlyonebot",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Minimal OpenClaw OneBot channel plugin",
   "type": "module",
   "main": "dist/index.js",
