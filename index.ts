@@ -24,7 +24,12 @@ const plugin = {
   name: "Only OneBot",
   description: "Only OneBot channel plugin",
   register(api: any) {
+    console.log("[onlyonebot:diag] register() called");
     api.registerChannel({ plugin: onlyOneBotPlugin as any });
+    console.log("[onlyonebot:diag] registerChannel() done", {
+      pluginId: onlyOneBotPlugin?.id,
+      metaId: (onlyOneBotPlugin as any)?.meta?.id,
+    });
     (api as any).registerCli?.(
       ({ program }: any) => {
         program
@@ -45,6 +50,7 @@ const plugin = {
       path: "/onlyonebot/webhook",
       auth: "plugin", // plugin-managed auth (verify signatures yourself)
       handler: async (req: any, res: any) => {
+        console.log("[onlyonebot:diag] webhook route hit");
         const event = parseWebhookPayload(req);
   
         // Your inbound handler dispatches the message to OpenClaw.

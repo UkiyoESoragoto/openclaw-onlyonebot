@@ -4,6 +4,7 @@ import { onlyOneBotApi } from "./client.js"; // your platform API client
 type ResolvedAccount = {
   accountId: string | null;
   token: string;
+  enabled: boolean;
   allowFrom: string[];
   dmPolicy: string | undefined;
 };
@@ -66,13 +67,23 @@ function resolveAllowFromForAccount(
 
 function listOnlyonebotAccountIds(cfg: OpenClawConfig): string[] {
   const section = getOnlyonebotSection(cfg);
-  if (!section) return [];
+  if (!section) {
+    console.log("[onlyonebot:diag] listAccountIds: no section");
+    return [];
+  }
   const accounts = section.accounts;
   if (accounts && typeof accounts === "object" && !Array.isArray(accounts)) {
     const ids = Object.keys(accounts as Record<string, unknown>).filter(Boolean);
-    if (ids.length > 0) return ids;
+    if (ids.length > 0) {
+      console.log("[onlyonebot:diag] listAccountIds from accounts", ids);
+      return ids;
+    }
   }
-  if (resolveTokenForAccount(section, "default")) return ["default"];
+  if (resolveTokenForAccount(section, "default")) {
+    console.log("[onlyonebot:diag] listAccountIds fallback default");
+    return ["default"];
+  }
+  console.log("[onlyonebot:diag] listAccountIds empty after checks");
   return [];
 }
 
@@ -87,11 +98,33 @@ function resolveAccount(
       : "default";
   const token = resolveTokenForAccount(section, id);
   const allowFrom = resolveAllowFromForAccount(section, id);
+  const sectionEnabled = section?.enabled;
+  const accountEnabled =
+    section?.accounts &&
+    typeof section.accounts === "object" &&
+    !Array.isArray(section.accounts) &&
+    (section.accounts as Record<string, any>)[id] &&
+    typeof (section.accounts as Record<string, any>)[id] === "object"
+      ? (section.accounts as Record<string, any>)[id].enabled
+      : undefined;
+  const enabled =
+    typeof accountEnabled === "boolean"
+      ? accountEnabled
+      : typeof sectionEnabled === "boolean"
+        ? sectionEnabled
+        : true;
   const dmPolicy =
     section?.dmSecurity ?? section?.dmPolicy ?? undefined;
+  console.log("[onlyonebot:diag] resolveAccount", {
+    accountId: id,
+    enabled,
+    hasToken: Boolean(token?.trim()),
+    allowFromCount: allowFrom.length,
+  });
   return {
     accountId: id === "default" ? null : id,
     token,
+    enabled,
     allowFrom,
     dmPolicy,
   };
@@ -137,7 +170,7 @@ export const onlyOneBotPlugin = {
       return {
         accountId: String(id),
         name: "OnlyOneBot",
-        enabled: true,
+        enabled: account.enabled,
         configured,
       };
     },
@@ -224,18 +257,22 @@ export const onlyOneBotPlugin = {
       setStatus: (next: Record<string, unknown>) => void;
       getStatus: () => Record<string, unknown>;
     }) => {
+      console.log("[onlyonebot:diag] gateway.startAccount enter");
       setStatus({
         ...getStatus(),
         running: true,
         connected: true,
         lastConnectedAt: Date.now(),
       });
+      console.log("[onlyonebot:diag] gateway.startAccount status set running");
       await new Promise<void>((resolve) => {
         if (abortSignal.aborted) {
+          console.log("[onlyonebot:diag] gateway.startAccount abort already set");
           resolve();
           return;
         }
         const onAbort = () => {
+          console.log("[onlyonebot:diag] gateway.startAccount abort signal received");
           abortSignal.removeEventListener("abort", onAbort);
           resolve();
         };
@@ -246,6 +283,7 @@ export const onlyOneBotPlugin = {
         running: false,
         connected: false,
       });
+      console.log("[onlyonebot:diag] gateway.startAccount exit");
     },
   },
   status: {
@@ -279,11 +317,11 @@ export const onlyOneBotPlugin = {
       return {
         accountId: String(id),
         name: "OnlyOneBot",
-        enabled: true,
+        enabled: account.enabled,
         configured,
         statusState: configured ? "ready" : "unconfigured",
         connected: configured,
-        running: configured,
+        running: configured && account.enabled,
       };
     },
     buildChannelSummary: ({
