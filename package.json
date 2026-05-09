@@ -1,6 +1,6 @@
 {
   "name": "@openclaw/onlyonebot",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "description": "Minimal OneBot v11 channel plugin for OpenClaw",
   "scripts": {
@@ -14,9 +14,9 @@
   },
   "openclaw": {
     "extensions": [
-      "./index.ts"
+      "./dist/index.js"
     ],
-    "setupEntry": "./setup-entry.ts",
+    "setupEntry": "./dist/setup-entry.js",
     "channel": {
       "id": "onlyonebot",
       "label": "Only OneBot",
