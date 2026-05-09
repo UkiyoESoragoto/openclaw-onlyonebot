@@ -8,7 +8,7 @@ interface OneBotAccount {
 }
 
 function getAccounts(config: AnyRecord): Record<string, AnyRecord> {
-  return config?.channels?.onebot?.accounts ?? {};
+  return config?.channels?.onlyonebot?.accounts ?? config?.channels?.onebot?.accounts ?? {};
 }
 
 function toAccount(accountId: string, raw: AnyRecord | undefined): OneBotAccount | undefined {
@@ -38,14 +38,14 @@ function buildSendPayload(target: AnyRecord, text: string): AnyRecord {
 }
 
 export const onlyOneBotPlugin = {
-  id: "onebot",
+  id: "onlyonebot",
   meta: {
-    id: "onebot",
-    label: "OneBot",
-    selectionLabel: "OneBot (HTTP API)",
-    docsPath: "/channels/onebot",
+    id: "onlyonebot",
+    label: "Only OneBot",
+    selectionLabel: "Only OneBot (HTTP API)",
+    docsPath: "/channels/onlyonebot",
     blurb: "Minimal OneBot channel plugin.",
-    aliases: ["ob"],
+    aliases: ["ob", "onebot"],
   },
   capabilities: {
     chatTypes: ["direct", "group"],
