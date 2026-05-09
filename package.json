@@ -1,6 +1,6 @@
 {
-  "name": "@openclaw/onlyonebot",
-  "version": "0.1.7",
+  "name": "openclaw-onlyonebot",
+  "version": "0.1.8",
   "publishConfig": {
     "access": "public"
   },
@@ -10,7 +10,6 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "scripts",
     "src",
     "index.ts",
     "setup-entry.ts",
@@ -29,8 +28,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch",
-    "postinstall": "node scripts/postinstall-link-sdk.js"
+    "dev": "tsc -p tsconfig.json --watch"
   },
   "peerDependencies": {
     "openclaw": "*"
