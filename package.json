@@ -1,6 +1,6 @@
 {
   "name": "openclaw-onlyonebot",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Minimal OpenClaw OneBot channel plugin",
   "type": "module",
   "main": "dist/index.js",
@@ -13,6 +13,11 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rimraf dist"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ]
   },
   "devDependencies": {
     "rimraf": "^6.0.1",
