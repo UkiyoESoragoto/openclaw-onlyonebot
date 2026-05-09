@@ -3,7 +3,7 @@
   "name": "Only OneBot",
   "description": "占位 OneBot 渠道插件，用于验证 OpenClaw 插件安装与 Channel 配置界面",
   "channels": ["onlyonebot"],
-  "extensions": ["./preload.cjs"],
+  "extensions": ["./dist/index.js"],
   "configSchema": {
     "type": "object",
     "additionalProperties": false,

@@ -1,6 +1,6 @@
 {
   "name": "openclaw-onlyonebot",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "publishConfig": {
     "access": "public"
   },
@@ -13,13 +13,12 @@
     "src",
     "index.ts",
     "setup-entry.ts",
-    "preload.cjs",
     "tsconfig.json",
     "openclaw.plugin.json"
   ],
   "openclaw": {
     "id": "openclaw-onlyonebot",
-    "extensions": ["./preload.cjs"],
+    "extensions": ["./dist/index.js"],
     "setupEntry": "./dist/setup-entry.js",
     "channel": {
       "id": "onlyonebot",
