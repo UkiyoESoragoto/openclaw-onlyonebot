@@ -41,7 +41,7 @@ function normalizeSetupInput(input: Record<string, unknown>): {
   return { token, allowFrom };
 }
 
-export const onlyOneBotPlugin = createChatChannelPlugin<ResolvedAccount>({
+const pluginCore = createChatChannelPlugin<ResolvedAccount>({
   base: createChannelPluginBase({
     id: "onlyonebot",
     config: {
@@ -98,7 +98,11 @@ export const onlyOneBotPlugin = createChatChannelPlugin<ResolvedAccount>({
         return null;
       },
     },
-    capabilities: {} as any,
+    capabilities: {
+      chatTypes: ["direct", "group"],
+      reply: true,
+      media: true,
+    } as any,
   } as any),
 
   // DM security: who can message the bot
@@ -140,4 +144,71 @@ export const onlyOneBotPlugin = createChatChannelPlugin<ResolvedAccount>({
     },
     base: {} as any,
   },
-} as any);
+});
+
+export const onlyOneBotPlugin = {
+  ...(pluginCore as Record<string, unknown>),
+  status: {
+    defaultRuntime: {
+      accountId: "default",
+      name: "OnlyOneBot",
+      enabled: true,
+      configured: false,
+    },
+    probeAccount: async ({
+      cfg,
+    }: {
+      account: ResolvedAccount;
+      timeoutMs: number;
+      cfg: OpenClawConfig;
+    }) => {
+      const section = (cfg.channels as Record<string, unknown>)?.onlyonebot as
+        | Record<string, unknown>
+        | undefined;
+      const token = section?.token;
+      if (typeof token !== "string" || !token.trim()) {
+        return { ok: false as const, error: "token missing" };
+      }
+      return { ok: true as const };
+    },
+    buildAccountSnapshot: async ({
+      account,
+      cfg,
+    }: {
+      account: ResolvedAccount;
+      cfg: OpenClawConfig;
+    }) => {
+      const section = (cfg.channels as Record<string, unknown>)?.onlyonebot as
+        | Record<string, unknown>
+        | undefined;
+      const configured = typeof section?.token === "string" && !!section.token;
+      return {
+        accountId: String(account.accountId ?? "default"),
+        name: "OnlyOneBot",
+        enabled: true,
+        configured,
+        statusState: configured ? "ready" : "unconfigured",
+        connected: configured,
+        running: configured,
+      };
+    },
+    formatCapabilitiesProbe: ({
+      probe,
+    }: {
+      probe: { ok: boolean; error?: unknown };
+    }) => {
+      if (probe.ok) {
+        return [{ text: "OnlyOneBot token present", tone: "success" as const }];
+      }
+      return [
+        {
+          text:
+            typeof probe.error === "string"
+              ? probe.error
+              : "OnlyOneBot not configured",
+          tone: "warn" as const,
+        },
+      ];
+    },
+  },
+} as any;
