@@ -4,7 +4,7 @@ export const onlyOneBotOnboardingAdapter: AnyRecord = {
   buildExampleConfig(): AnyRecord {
     return {
       channels: {
-        onebot: {
+        onlyonebot: {
           accounts: {
             default: {
               enabled: true,

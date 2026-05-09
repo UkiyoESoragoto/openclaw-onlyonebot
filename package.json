@@ -1,6 +1,6 @@
 {
   "name": "openclaw-onlyonebot",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Minimal OpenClaw OneBot channel plugin",
   "type": "module",
   "main": "dist/index.js",
@@ -16,8 +16,24 @@
   },
   "openclaw": {
     "extensions": [
+      "./index.ts"
+    ],
+    "runtimeExtensions": [
       "./dist/index.js"
-    ]
+    ],
+    "setupEntry": "./setup-entry.ts",
+    "runtimeSetupEntry": "./dist/setup-entry.js",
+    "channel": {
+      "id": "onlyonebot",
+      "label": "Only OneBot",
+      "selectionLabel": "Only OneBot (HTTP API)",
+      "docsPath": "/channels/onlyonebot",
+      "blurb": "Minimal OneBot channel plugin",
+      "aliases": [
+        "onebot",
+        "ob"
+      ]
+    }
   },
   "devDependencies": {
     "rimraf": "^6.0.1",

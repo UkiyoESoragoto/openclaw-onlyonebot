@@ -1,13 +1,20 @@
 {
   "id": "openclaw-onlyonebot",
   "name": "Only OneBot",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
     "properties": {
       "accounts": {
         "type": "object",
+        "default": {
+          "default": {
+            "enabled": true,
+            "baseUrl": "http://127.0.0.1:5700",
+            "accessToken": ""
+          }
+        },
         "additionalProperties": {
           "type": "object",
           "additionalProperties": false,
